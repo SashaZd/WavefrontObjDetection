@@ -37,18 +37,32 @@ class Parser(object):
 
 	def parse_v(self, line):
 		currentInd = len(self.v)+1
-		(x,y,z) = map(float, line.split()[1:])
-		self.v[currentInd] = (x,y,z)
+		xyz = tuple(map(float, line.split()[1:]))
+		self.v[currentInd] = xyz
 
 	def parse_vn(self, line):
 		currentInd = len(self.vn)+1;
-		(x,y,z) = map(float, line.split()[1:])
-		self.vn[currentInd] = (x,y,z)
+		xyz = tuple(map(float, line.split()[1:]))
+		self.vn[currentInd] = xyz
 
 	def parse_f(self, line):
-		currentInd = len(self.f)+1;
-		(x, xn, y, yn, z, zn) = map(int, re.split(' |//',line)[1:])
-		self.f[currentInd] = (x, xn, y, yn, z, zn)
+		"""
+			Only keep faces where the y-vector normals >= 0
+			Reduced number of faces from 613498 to 379666
+		"""
+
+		currentInd = len(self.f)+1
+
+		# (x, xn, y, yn, z, zn) <-- format
+		checkFace = map(int, re.split(' |//',line)[1:])
+
+		# Check values for y normals to ensure all are positive
+		
+		ynormals = [self.vn[checkFace[1]][1], self.vn[checkFace[3]][1], self.vn[checkFace[5]][1]]
+		if all(vny >= 0 for vny in ynormals):
+			self.f[currentInd] = tuple(checkFace)
+
+		
 
 
 
