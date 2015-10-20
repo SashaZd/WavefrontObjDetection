@@ -22,6 +22,13 @@ class Parser(object):
 		Attempting to do a heirarchial cluster on the faces that we want.
 		Assuming that a face is a combination of an objects v and vn.
 		Only running on faces that are close to normal
+		CANCELLED
+		Using the Rotating Caliper algorithm to create a bounding box that we can
+		use.
+
+		ASSUMPTIONS:
+		- The z-index goes from a lowwe negative level to a higher negative level
+		in the OBJ file
 
 
 		TODO:
@@ -37,9 +44,11 @@ class Parser(object):
 	def __init__(self, file_name):
 		self.file_name = file_name
 		self.v = {} 
+		self.fgroups={};
 		self.vn = {}
 		self.f={}
 		self.VNIndex=0
+		self.numberOfSkips=0	
 		self.read_file(file_name)
 
 		# return (self,.v, self.vn, self.f)
@@ -53,7 +62,40 @@ class Parser(object):
 		   		break;
 
 		#reparse to group into faces
-		#find_centers(self.f,2)
+		#generate_faces(self.f)
+		for key in self.f.keys():
+			face = self.f[key]
+			lastfgroup=len(self.fgroups)
+			lastf=len(self.fgroups[lastfgroup])
+			if(face.v[2][2]-self.fgroups[lastfgroup][lastf].v[2][2]>0.01):
+				self.fgroups[lastfgroup+1]={}
+				self.fgroups[lastfgroup+1][1]=face
+			else:
+				self.fgroups[lastfgroup][lastf+1]=face
+
+		index=0
+		for fgroup in self.fgroups:
+			index+=1
+			write_file_from_f_group(fgroup,'file-layer'+str(index)+'.obj')
+
+
+	
+	def write_file_from_f_group(self,fgroup,output_file_name):
+		outputFile = open(output_file_name, 'w')
+		for i in fgroup.keys():
+			for j in fgroup[i].v.keys():
+				outStr = "v " + " ".join(str(x) for x in fgroup[i].v[j]) + "\n"
+				outputFile.write(outStr)
+
+		for i in fgroup.keys():
+			for j in fgroup[i].vn.keys():
+				outStr = "vn " + " ".join(str(x) for x in fgroup[i].vn[j]) + "\n"
+				outputFile.write(outStr)
+
+		for k in range(len(fgroup.keys())):
+			outStr = "f " + str(3*k+1)+ "//" +  str(3*k+1) + " " + str(3*k+2) + "//" +  str(3*k+2) + " " + str(3*k+3) + "//" +  str(3*k+3) + "\n";
+			outputFile.write(outStr)
+
 
 	def write_file(self,output_file_name):
 		outputFile = open(output_file_name, 'w')
@@ -103,57 +145,55 @@ class Parser(object):
 		return True
 
 	def parse_v(self, line):
-		currentInd=len(self.v)+1
+		currentInd=len(self.v)+1 
 		xyz = tuple(map(float, line.split()[1:]))
 		self.v[currentInd]=xyz
 
 
+	"""
+	parse_vn does the test for which vertices to keep or not according to the angles formed
+	with the y axis.
+
+	If it detects something that doesn't fit in it removes all three normals from the pattern. 
+	as the face won't exist
+
+	We have a counter variable called self.VNIndex. 
+	VNIndex % 3 will give the number of future numbers to skip
+
+	"""
 	def parse_vn(self, line):
 		xyz = tuple(map(float, line.split()[1:]))
 		#Using self.VNIndex so that we can delete the extra normals 
 		self.VNIndex=self.VNIndex+1
-		#Only keep faces where the y-vector normals >= 0
-		if (xyz[1] >= 0):
+		#If we have to skip this don't bother to check
+		if self.numberOfSkips!=0:
+			self.numberOfSkips-=1
+		#Only keep faces where the y-vector normals < 20 radians
+		#0.174533
+		elif (self.angle_with_y(xyz) <= 0.174533*4):
 			self.vn[self.VNIndex]=(xyz)
 		else:
-			self.v.pop(self.VNIndex)
+			self.numberOfSkips=(3-(self.VNIndex%3))%3
+			
+			##remove extra vn
+			for i in range(0,3-self.numberOfSkips):
+				self.vn.pop(self.VNIndex-i,None)	
+			##remove extra v
+			for i in range(self.numberOfSkips-2,self.numberOfSkips+1):
+				self.v.pop(self.VNIndex+i,None)	
 
 	def angle_with_y(self,v1):
 		"""Dot product, then normalize, then offset from origin"""
 		v2=[0,1,0]
+		
 		cosang = np.dot(v1, v2)
 		sinang = np.linalg.norm(np.cross(v1, v2))
 		return np.arctan2(sinang, cosang)
 
-	def cluster_points(X, mu):
-		clusters  = {}
-		for x in X:
-        	bestmukey = min([(i[0], np.linalg.norm(x-mu[i[0]])) \
-					for i in enumerate(mu)], key=lambda t:t[1])[0]
-		try:
-			clusters[bestmukey].append(x)
-		except KeyError:
-			clusters[bestmukey] = [x]
-		return clusters
- 
-	def reevaluate_centers(mu, clusters):
-    	newmu = []
-    	keys = sorted(clusters.keys())
-		for k in keys:
-        	newmu.append(np.mean(clusters[k], axis = 0))
-    	return newmu
- 
-	def has_converged(mu, oldmu):
-    	return (set([tuple(a) for a in mu]) == set([tuple(a) for a in oldmu])
- 
-	def find_centers(X, K):
-    	# Initialize to K random centers
-    	oldmu = random.sample(X, K)
-    	mu = random.sample(X, K)
-    	while not has_converged(mu, oldmu):
-        	oldmu = mu
-        	# Assign all points in X to clusters
-        	clusters = cluster_points(X, mu)
-        	# Reevaluate centers
-        	mu = reevaluate_centers(oldmu, clusters)
-    	return(mu, clusters)
+	def angle_with_z(self,v1):
+		"""Dot product, then normalize, then offset from origin"""
+		v2=[0,0,1]
+		cosang = np.dot(v1, v2)
+		sinang = np.linalg.norm(np.cross(v1, v2))
+		return np.arctan2(sinang, cosang)
+

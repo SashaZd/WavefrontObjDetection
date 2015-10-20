@@ -1,8 +1,8 @@
 from Parser import Parser
 
 
-file_name = 'sphere.obj'
-output_file_name = "sphere.obj.txt"
+file_name = 'Chair.obj'
+output_file_name = "FinalChair2.obj"
 
 
 """ 
@@ -15,4 +15,4 @@ output_file_name = "sphere.obj.txt"
 #outputFile = open(output_file_name, 'w')
 parsedObj = Parser(file_name)
 # print parsedObj.v[1]
-#parsedObj.write_file(output_file_name)
+parsedObj.write_file(output_file_name)
