@@ -2,12 +2,11 @@
 
 class ThreeDObject(object):
 	
-	"""docstring for Object"""
+	"""ThreeDObject is a class for the wavefront representation of 3d objects"""
 
-	def __init__(self,v,vn,f):
+	def __init__(self,v,vn,):
 		self.v = v
 		self.vn = vn
-		self.f = vf
 
 	def add_v(self,vertex):
 		currentInd = len(self.v)+1
@@ -17,8 +16,5 @@ class ThreeDObject(object):
 		currentInd = len(self.vn)+1
 		self.vn[currentInd] = vertex_normal
 
-	def add_face(self,face):
-		currentInd=len(self.f)+1
-		self.f[currentInd]=face
 	
 		
