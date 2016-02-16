@@ -1,4 +1,5 @@
 *.obj
 *.ply
-
-*pyc
+*.obj.txt
+*.pyc
+*.txt
