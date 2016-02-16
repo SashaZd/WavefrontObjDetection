@@ -31,6 +31,8 @@ class Parser(object):
 		self.v_queue = deque([])
 		self.v_list = []
 		self.vn_list = []
+		
+
 		self.v_list_unique = defaultdict(list)
 
 
@@ -86,7 +88,7 @@ class Parser(object):
 		self.write_v_unique()
 
 
-
+	# runs in a single pass and generates the defaultdict 
 	def v_list_unique_generator(self):
 		tally = defaultdict(list)
 		seq = self.v_list
