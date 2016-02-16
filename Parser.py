@@ -279,8 +279,10 @@ class Parser(object):
 			self.numberOfSkips=(3-(self.VNIndex%3))%3
 			
 			##remove extra vn
+
 			for i in range(1,3-self.numberOfSkips):
 				self.vn.pop(self.VNIndex-i,None)	
+
 			##remove extra v
 			#for i in range(self.numberOfSkips-2,self.numberOfSkips+1):
 			#	self.v.pop(self.VNIndex+i,None)	
