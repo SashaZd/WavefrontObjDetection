@@ -85,8 +85,11 @@ class Parser(object):
 
 		# self.write_f_file()
 
+
 		# Temporary writing for connected components. Remove later.
-		self.write_v_unique()
+		# self.write_v_unique()
+		self.write_f_for_cc_analysis()
+
 
 
 	# runs in a single pass and generates the defaultdict 
@@ -100,7 +103,18 @@ class Parser(object):
 
 
 		# self.create_f_file()
-					
+				
+	## To generate Temp_FV_CC.txt file with all unique vertices and the faces they belong to for merging.
+	def write_f_for_cc_analysis(self):
+		sorted_v_unique = sorted(self.v_list_unique.items(), key=operator.itemgetter(1))
+
+		outputFile = open("Temp_FV_CC.txt", 'w')
+		outputFile.write("List values are face numbers")
+		for (key, indexes) in sorted_v_unique:
+			out_str = "( %s ) : %s" % (key[:-2], [x/3 for x in indexes])
+			outputFile.write(out_str)
+			outputFile.write("\n")
+
 	def write_f_file(self):
 		outputFile = open(OUTPUT_FILE_NAME, 'w')
 
@@ -115,17 +129,6 @@ class Parser(object):
 		for x in xrange(1,len(self.v_list),3):
 			f_str = "f %d//%d %d//%d %d//%d \n" % (x, x, x+1, x+1, x+2, x+2)
 			outputFile.write(f_str)
-
-	def write_v_unique(self):
-		outputFile = open("Temp_V_Unique.txt", 'w')
-
-		sorted_v_unique = sorted(self.v_list_unique.items(), key=operator.itemgetter(1))
-
-		for (key, indexes) in sorted_v_unique:
-			out_str = "( %s ) : %s" % (key[:-2], indexes)
-			outputFile.write(out_str)
-			outputFile.write("\n")
-		
 
 	# Time 5 seconds
 	def parse_v(self, line):
