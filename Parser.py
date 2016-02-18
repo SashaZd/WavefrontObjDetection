@@ -119,7 +119,7 @@ class Parser(object):
 		outputFile = open("Temp_V_Unique.txt", 'w')
 
 		for (key, indexes) in self.v_list_unique.items():
-			out_str = "( %s ) : %s" % (key.strip(), indexes)
+			out_str = "( %s ) : %s" % (key[:-2], indexes)
 			outputFile.write(out_str)
 			outputFile.write("\n")
 		
