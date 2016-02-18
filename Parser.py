@@ -2,6 +2,7 @@ import time
 import re
 import numpy as np
 import math
+import operator
 from collections import deque
 from collections import defaultdict
 
@@ -118,7 +119,9 @@ class Parser(object):
 	def write_v_unique(self):
 		outputFile = open("Temp_V_Unique.txt", 'w')
 
-		for (key, indexes) in self.v_list_unique.items():
+		sorted_v_unique = sorted(self.v_list_unique.items(), key=operator.itemgetter(1))
+
+		for (key, indexes) in sorted_v_unique:
 			out_str = "( %s ) : %s" % (key[:-2], indexes)
 			outputFile.write(out_str)
 			outputFile.write("\n")
