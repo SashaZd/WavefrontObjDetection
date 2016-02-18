@@ -90,30 +90,37 @@ class Parser(object):
 		# self.write_v_unique()
 		self.write_f_for_cc_analysis()
 
+		print "After rounding off, we're left with %d vertices" % len(self.v_list)
 
 
 	# runs in a single pass and generates the defaultdict 
 	def v_list_unique_generator(self):
-		tally = defaultdict(list)
+		self.v_list_unique = defaultdict(list)
 		seq = self.v_list
 		for i,item in enumerate(seq):
-			tally[item].append(i)
-		
-		self.v_list_unique = tally #((key,locs) for key,locs in tally.items() if len(locs)>1)
-
+			self.v_list_unique[item].append(i)
 
 		# self.create_f_file()
 				
 	## To generate Temp_FV_CC.txt file with all unique vertices and the faces they belong to for merging.
 	def write_f_for_cc_analysis(self):
-		sorted_v_unique = sorted(self.v_list_unique.items(), key=operator.itemgetter(1))
+		# sorted_v_unique = sorted(self.v_list_unique.items(), key=operator.itemgetter(1))
+		self.v_list = {}
 
-		outputFile = open("Temp_FV_CC.txt", 'w')
-		outputFile.write("List values are face numbers")
-		for (key, indexes) in sorted_v_unique:
-			out_str = "( %s ) : %s" % (key[:-2], [x/3 for x in indexes])
-			outputFile.write(out_str)
-			outputFile.write("\n")
+		for (key, indexes) in self.v_list_unique.items():
+			key_rounded = tuple([round(float(x),3) for x in key.split()[1:]])
+			indexes_faces = [x/3 for x in indexes]
+			if key_rounded in self.v_list:
+				self.v_list[key_rounded].extend(indexes_faces)
+			else:
+				self.v_list[key_rounded] = indexes_faces
+
+		for (key, indexes) in self.v_list.items():
+			self.v_list[key] = self.remove_list_duplicates(self.v_list[key])
+
+		v_with_faces_sorted = sorted(self.v_list.items(), key=operator.itemgetter(1))
+		self.write_a_file_temp(v_with_faces_sorted)
+
 
 	def write_f_file(self):
 		outputFile = open(OUTPUT_FILE_NAME, 'w')
@@ -150,6 +157,39 @@ class Parser(object):
 
 	def parse_f(self, line):
 		pass
+
+
+	def remove_list_duplicates(self, seq):
+		keys = {}
+		for e in seq:
+			keys[e] = 1
+		return keys.keys()
+
+	def write_a_file_temp(self, iterEle, file_name="Temp_FV_CC.txt"):
+		# To see what the iterable looks like
+		# Don't pass the iterable to this method to save time since this is for debug purposes only. 
+		# Instead, just paste this into the calling method and delete later.
+
+		outputFile = open(file_name, 'w')
+		# outputFile.write(comment)
+
+		# if isinstance(iterEle, dict):
+		for (key, indexes) in iterEle:
+			out_str = "%s :::: %s" % (key, indexes)
+			outputFile.write(out_str)
+			outputFile.write("\n")
+
+		# elif isinstance(iterEle, list):
+		# 	for element in iterEle:
+		# 		# out_str = str(element)
+		# 		outputFile.write(element)
+		# 		outputFile.write("\n")
+
+		# else:
+		# 	pass
+
+
+		
 
 
 # Unused, check with Carl
