@@ -32,9 +32,11 @@ class Parser(object):
 		self.v_queue = deque([])
 		self.v_list = []
 		self.vn_list = []
-		
 
 		self.v_list_unique = defaultdict(list)
+
+		self.connected_components = defaultdict(set)
+		self.visited_faces = {}
 
 
 	def readFile(self):
@@ -49,6 +51,8 @@ class Parser(object):
 				self.parse_v(line)
 			line = objFile.readline()
 
+		print "Starting with %d vertices & normals" % (len(self.v_queue))
+		print time.time()
 		# line currently contains the first vn line. 
 
 		faceVns = (line, objFile.readline(), objFile.readline())
@@ -75,22 +79,82 @@ class Parser(object):
 			faceVns = (objFile.readline(), objFile.readline(), objFile.readline())
 
 		# Time till here 42  seconds
+		
 		# Number of V&Vns : 8595078 (each)
 
 		print "Reduced to %d vertices & %d normals" % (len(self.v_list), len(self.vn_list))
+		print time.time()
 
 		self.v_list_unique_generator()
 
 		print "Removing duplicates for connected components reduced to: %d vertices" % (len(self.v_list_unique))
+		print time.time()
 
 		# self.write_f_file()
 
 
 		# Temporary writing for connected components. Remove later.
 		# self.write_v_unique()
-		self.write_f_for_cc_analysis()
 
-		print "After rounding off, we're left with %d vertices" % len(self.v_list)
+		self.generate_v_with_face_indexes()
+
+		
+
+		print "After rounding off, we're left with %d vertices" % len(self.v_list_unique)
+		print time.time()
+
+		self.generate_connected_components()
+
+
+
+	def generate_connected_components(self):
+		sorted_v_unique = sorted(self.v_list_unique.items(), key=operator.itemgetter(1))
+
+		for (key, indexes) in sorted_v_unique:
+			selected_component = -1
+			visited_faces = sorted(list(set(indexes) & set(self.visited_faces)))
+
+			# Found at least 1 visited face
+			if len(visited_faces) > 0:
+
+				# select the first component to merge the others into
+				# Find
+				selected_component = self.visited_faces[visited_faces.pop(0)]
+
+				# Union
+				for eachFace in visited_faces:
+
+					# Merge other components
+					checkComponent = self.visited_faces[eachFace]
+					if checkComponent != selected_component:
+						print "Merging Component: ", checkComponent, " with Component: ", selected_component
+						# Make the visited component point to the new selected component
+						for face in self.connected_components[checkComponent]:
+							self.visited_faces[face]=selected_component
+
+						# Merge both components into the one
+						self.connected_components[selected_component].update(self.connected_components[checkComponent])
+						self.connected_components[checkComponent] = set()
+
+			# No faces were visited before. Adding new component
+			else:
+				selected_component = len(self.connected_components)
+				# print "-------------- Creating Component: ", selected_component
+
+
+			unvisited_faces = set(indexes) - set(visited_faces)
+			for each in unvisited_faces:
+				self.visited_faces[each] = selected_component
+
+			self.connected_components[selected_component].update(unvisited_faces)
+
+		outputFile = open("Temp_ConnectedComponents2", 'w')
+
+		for (componentID, faces) in self.connected_components.items():
+			out_str = "%s :: %d :: %s" % (componentID, len(faces), faces)
+			outputFile.write(out_str)
+			outputFile.write("\n")
+			
 
 
 	# runs in a single pass and generates the defaultdict 
@@ -103,23 +167,25 @@ class Parser(object):
 		# self.create_f_file()
 				
 	## To generate Temp_FV_CC.txt file with all unique vertices and the faces they belong to for merging.
-	def write_f_for_cc_analysis(self):
+	def generate_v_with_face_indexes(self):
 		# sorted_v_unique = sorted(self.v_list_unique.items(), key=operator.itemgetter(1))
-		self.v_list = {}
+		v_with_indexes = {}
 
 		for (key, indexes) in self.v_list_unique.items():
 			key_rounded = tuple([round(float(x),3) for x in key.split()[1:]])
 			indexes_faces = [x/3 for x in indexes]
-			if key_rounded in self.v_list:
-				self.v_list[key_rounded].extend(indexes_faces)
+			if key_rounded in v_with_indexes:
+				v_with_indexes[key_rounded].extend(indexes_faces)
 			else:
-				self.v_list[key_rounded] = indexes_faces
+				v_with_indexes[key_rounded] = indexes_faces
 
-		for (key, indexes) in self.v_list.items():
-			self.v_list[key] = self.remove_list_duplicates(self.v_list[key])
+		for (key, indexes) in v_with_indexes.items():
+			v_with_indexes[key] = self.remove_list_duplicates(v_with_indexes[key])
 
-		v_with_faces_sorted = sorted(self.v_list.items(), key=operator.itemgetter(1))
-		self.write_a_file_temp(v_with_faces_sorted)
+		# v_with_faces_sorted = sorted(v_with_indexes.items(), key=operator.itemgetter(1))
+		# self.write_a_file_temp(v_with_faces_sorted)
+
+		self.v_list_unique = v_with_indexes
 
 
 	def write_f_file(self):
