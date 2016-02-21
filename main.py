@@ -6,7 +6,7 @@ t0 = time.time()
 print "Starting...."
 
 print t0 
-parser = Parser("FullRoom.obj.txt")
+parser = Parser("FullRoom.obj")
 parser.readFile()
 
 

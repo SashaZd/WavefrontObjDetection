@@ -19,7 +19,8 @@ class Parser(object):
 	def __init__(self, file_name):
 		
 		self.file_name = file_name
-
+		self.rounding_number =1
+		self.yFactor =0.4
 		"""
 		v1.0.1
 		Reading file just once. All vertices are read into a queue. On the basis of a trio of normals (per face), 
@@ -61,10 +62,10 @@ class Parser(object):
 			flagVnSet = True
 			for eachFace in faceVns: 
 				xyz = tuple(map(float, eachFace.split()[1:]))
-				
+				square=xyz[0]*xyz[0] + xyz[1]* xyz[1]+ xyz[2]*xyz[2]
 				# checking if Y-Normal is positive only. Need to add a min/max bound to this. 
 				# if (self.angle_with_y(xyz) <= 0.174533*2):
-				if -0.17 < xyz[1] < 0.17:
+				if -self.yFactor < (xyz[1]) / square <self.yFactor:
 					flagVnSet = False
 			
 			if flagVnSet == True:
@@ -79,7 +80,6 @@ class Parser(object):
 			faceVns = (objFile.readline(), objFile.readline(), objFile.readline())
 
 		# Time till here 42  seconds
-		
 		# Number of V&Vns : 8595078 (each)
 
 		print "Reduced to %d vertices & %d normals" % (len(self.v_list), len(self.vn_list))
@@ -90,11 +90,10 @@ class Parser(object):
 		print "Removing duplicates for connected components reduced to: %d vertices" % (len(self.v_list_unique))
 		print time.time()
 
-		# self.write_f_file()
 
 
 		# Temporary writing for connected components. Remove later.
-		# self.write_v_unique()
+		#self.write_a_file_temp(self.v_list_unique)
 
 		self.generate_v_with_face_indexes()
 
@@ -108,53 +107,50 @@ class Parser(object):
 
 
 	def generate_connected_components(self):
+		print "Starting CC"
+		print time.time()
 		sorted_v_unique = sorted(self.v_list_unique.items(), key=operator.itemgetter(1))
+		sorted_len=len(sorted_v_unique)
+		cc = range(0,sorted_len)
+		#sreverse_list={}
+		for i in range(0, sorted_len-1):
+			if(len(sorted_v_unique[i][1])>4):
+				if(cc[i] != cc[i+1]):
+					v1=sorted_v_unique[i]
+					v2=sorted_v_unique[i+1]
+					setV=set(v1[1])
 
-		for (key, indexes) in sorted_v_unique:
-			selected_component = -1
-			visited_faces = sorted(list(set(indexes) & set(self.visited_faces)))
-
-			# Found at least 1 visited face
-			if len(visited_faces) > 0:
-
-				# select the first component to merge the others into
-				# Find
-				selected_component = self.visited_faces[visited_faces.pop(0)]
-
-				# Union
-				for eachFace in visited_faces:
-
-					# Merge other components
-					checkComponent = self.visited_faces[eachFace]
-					if checkComponent != selected_component:
-						print "Merging Component: ", checkComponent, " with Component: ", selected_component
-						# Make the visited component point to the new selected component
-						for face in self.connected_components[checkComponent]:
-							self.visited_faces[face]=selected_component
-
-						# Merge both components into the one
-						self.connected_components[selected_component].update(self.connected_components[checkComponent])
-						self.connected_components[checkComponent] = set()
-
-			# No faces were visited before. Adding new component
+					intersection=setV.intersection(v2[1])
+					if(intersection):
+						#print 'CC No %d' % cc[i]
+						for j in range(0,i):
+							if(cc[j]==cc[i+1]):
+								cc[j]=cc[i]
+						cc[i+1]=cc[i]
 			else:
-				selected_component = len(self.connected_components)
-				# print "-------------- Creating Component: ", selected_component
+				cc[i]=-1
 
-
-			unvisited_faces = set(indexes) - set(visited_faces)
-			for each in unvisited_faces:
-				self.visited_faces[each] = selected_component
-
-			self.connected_components[selected_component].update(unvisited_faces)
-
+			#reverse_list[v]=reverse_list.get(v,[])
+			#reverse_list[v].append(k)
+		print "Done CC "
 		outputFile = open("Temp_ConnectedComponents2", 'w')
-
-		for (componentID, faces) in self.connected_components.items():
-			out_str = "%s :: %d :: %s" % (componentID, len(faces), faces)
-			outputFile.write(out_str)
-			outputFile.write("\n")
+		print len(set(cc))
+		components=self.list_duplicates(cc)
+		for c,locs in components:
+			if(c!=-1):
+				out_str=''
+				for loc in locs:
+					out_str += str(sorted_v_unique[loc][0])
+				outputFile.write(out_str)
+				outputFile.write("\n")
 			
+
+
+	def list_duplicates(self,seq):
+		tally = defaultdict(list)
+		for i,item in enumerate(seq):
+			tally[item].append(i)
+		return ((key,locs) for key,locs in tally.items() if len(locs)>1)
 
 
 	# runs in a single pass and generates the defaultdict 
@@ -170,9 +166,14 @@ class Parser(object):
 	def generate_v_with_face_indexes(self):
 		# sorted_v_unique = sorted(self.v_list_unique.items(), key=operator.itemgetter(1))
 		v_with_indexes = {}
-
+		v_new_list=[]
+		for key in self.v_list:
+			key_rounded = ([round(float(x),self.rounding_number) for x in key.split()[1:]])
+			k = "v %f %f %f" % (key_rounded[0],key_rounded[1],key_rounded[2])
+			v_new_list.append(k)
+		self.write_f_file(v_new_list)
 		for (key, indexes) in self.v_list_unique.items():
-			key_rounded = tuple([round(float(x),3) for x in key.split()[1:]])
+			key_rounded = tuple([round(float(x),self.rounding_number) for x in key.split()[1:]])
 			indexes_faces = [x/3 for x in indexes]
 			if key_rounded in v_with_indexes:
 				v_with_indexes[key_rounded].extend(indexes_faces)
@@ -182,20 +183,26 @@ class Parser(object):
 		for (key, indexes) in v_with_indexes.items():
 			v_with_indexes[key] = self.remove_list_duplicates(v_with_indexes[key])
 
-		# v_with_faces_sorted = sorted(v_with_indexes.items(), key=operator.itemgetter(1))
-		# self.write_a_file_temp(v_with_faces_sorted)
+		v_with_faces_sorted = sorted(v_with_indexes.items(), key=operator.itemgetter(1))
+		self.write_a_file_temp(v_with_faces_sorted)
 
 		self.v_list_unique = v_with_indexes
 
 
-	def write_f_file(self):
+	def write_f_file(self,v_list=[],vn_list=[]):
 		outputFile = open(OUTPUT_FILE_NAME, 'w')
 
-		for eachVertice in self.v_list:
+		if(v_list==[]):
+			v_list=self.v_list
+
+		if(vn_list==[]):
+			vn_list=self.vn_list
+
+		for eachVertice in v_list:
 			outputFile.write(eachVertice)
 			outputFile.write("\n")
 
-		for eachVerticeNormal in self.vn_list:
+		for eachVerticeNormal in vn_list:
 			outputFile.write(eachVerticeNormal)
 			outputFile.write("\n")
 
