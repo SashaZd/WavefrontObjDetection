@@ -112,37 +112,54 @@ class Parser(object):
 		sorted_v_unique = sorted(self.v_list_unique.items(), key=operator.itemgetter(1))
 		sorted_len=len(sorted_v_unique)
 		cc = range(0,sorted_len)
+		cc2 = []
 		#sreverse_list={}
-		for i in range(0, sorted_len-1):
-			if(len(sorted_v_unique[i][1])>4):
-				if(cc[i] != cc[i+1]):
-					v1=sorted_v_unique[i]
-					v2=sorted_v_unique[i+1]
-					setV=set(v1[1])
+		for i,v in enumerate(sorted_v_unique):
+			v1= set(v[1])
+			add_to_cc=True
+			for j,t in enumerate(cc2):
+				testSet=(t[1])
+				if(testSet.intersection(v1)):
+					cc2[j][0].append(v[0])
+					cc2[j][1]=testSet.union(v1)
+					add_to_cc=False
+					break
+			if(add_to_cc):
+				cc2.append([[v[0]],v1])
 
-					intersection=setV.intersection(v2[1])
-					if(intersection):
-						#print 'CC No %d' % cc[i]
-						for j in range(0,i):
-							if(cc[j]==cc[i+1]):
-								cc[j]=cc[i]
-						cc[i+1]=cc[i]
-			else:
-				cc[i]=-1
 
+			# if(len(sorted_v_unique[i][1])>2):
+			# 		for j in range(0, sorted_len-1):
+			# 			v1=sorted_v_unique[i]
+			# 			v2=sorted_v_unique[j]
+			# 			setV=set(v1[1])
+
+			# 			intersection=setV.intersection(v2[1])
+			# 			if(intersection):
+			# 			#print 'CC No %d' % cc[i]
+			# 				for j in range(0,i):
+			# 					if(cc[j]==cc[i+1]):
+			# 						cc[j]=cc[i]
+			# 				cc[i+1]=cc[i]
+			# else:
+			# 	cc[i]=-1
 			#reverse_list[v]=reverse_list.get(v,[])
 			#reverse_list[v].append(k)
 		print "Done CC "
 		outputFile = open("Temp_ConnectedComponents2", 'w')
-		print len(set(cc))
-		components=self.list_duplicates(cc)
-		for c,locs in components:
-			if(c!=-1):
-				out_str=''
-				for loc in locs:
-					out_str += str(sorted_v_unique[loc][0])
-				outputFile.write(out_str)
-				outputFile.write("\n")
+		print len((cc2))
+		count=0
+		for c,locs in cc2:
+			OUTPUT_FILE_NAME="CompressedRoomV2%s.obj"% count
+			count=count+1
+			if(len(c)>50):
+				print OUTPUT_FILE_NAME
+				vn=[]
+				k=[]
+				for v in c:
+					vn.append("vn 0 0 0")
+					k.append("v %f %f %f" % (v[0],v[1],v[2]))
+				self.write_f_file(k,vn)
 			
 
 
@@ -190,7 +207,7 @@ class Parser(object):
 
 
 	def write_f_file(self,v_list=[],vn_list=[]):
-		outputFile = open(OUTPUT_FILE_NAME, 'w')
+		outputFile = open(OUTPUT_FILE_NAME, 'w+')
 
 		if(v_list==[]):
 			v_list=self.v_list
