@@ -154,12 +154,8 @@ class Parser(object):
 			count=count+1
 			if(len(c)>50):
 				print OUTPUT_FILE_NAME
-				vn=[]
-				k=[]
-				for v in c:
-					vn.append("vn 0 0 0")
-					k.append("v %f %f %f" % (v[0],v[1],v[2]))
-				self.write_f_file(k,vn)
+				output=str(locs)+"\n"
+				outputFile.write(output)
 			
 
 
