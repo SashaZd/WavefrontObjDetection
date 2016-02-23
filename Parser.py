@@ -19,8 +19,8 @@ class Parser(object):
 	def __init__(self, file_name):
 		
 		self.file_name = file_name
-		self.rounding_number =1
-		self.yFactor =0.4
+		self.rounding_number = 1
+		self.yFactor = 0.4
 		"""
 		v1.0.1
 		Reading file just once. All vertices are read into a queue. On the basis of a trio of normals (per face), 
@@ -36,8 +36,8 @@ class Parser(object):
 
 		self.v_list_unique = defaultdict(list)
 
-		self.connected_components = defaultdict(set)
-		self.visited_faces = {}
+		self.connected_components = []
+		# self.visited_faces = {}
 
 
 	def readFile(self):
@@ -60,6 +60,7 @@ class Parser(object):
 		
 		while(faceVns[0][0:2] != "f "):
 			flagVnSet = True
+
 			for eachFace in faceVns: 
 				xyz = tuple(map(float, eachFace.split()[1:]))
 				square=xyz[0]*xyz[0] + xyz[1]* xyz[1]+ xyz[2]*xyz[2]
@@ -111,7 +112,6 @@ class Parser(object):
 		print time.time()
 		sorted_v_unique = sorted(self.v_list_unique.items(), key=operator.itemgetter(1))
 		sorted_len=len(sorted_v_unique)
-		cc = range(0,sorted_len)
 		cc2 = []
 		#sreverse_list={}
 		for i,v in enumerate(sorted_v_unique):
@@ -128,35 +128,71 @@ class Parser(object):
 				cc2.append([[v[0]],v1])
 
 
-			# if(len(sorted_v_unique[i][1])>2):
-			# 		for j in range(0, sorted_len-1):
-			# 			v1=sorted_v_unique[i]
-			# 			v2=sorted_v_unique[j]
-			# 			setV=set(v1[1])
-
-			# 			intersection=setV.intersection(v2[1])
-			# 			if(intersection):
-			# 			#print 'CC No %d' % cc[i]
-			# 				for j in range(0,i):
-			# 					if(cc[j]==cc[i+1]):
-			# 						cc[j]=cc[i]
-			# 				cc[i+1]=cc[i]
-			# else:
-			# 	cc[i]=-1
-			#reverse_list[v]=reverse_list.get(v,[])
-			#reverse_list[v].append(k)
+			
 		print "Done CC "
 		outputFile = open("Temp_ConnectedComponents2", 'w')
 		print len((cc2))
 		count=0
-		for c,locs in cc2:
-			OUTPUT_FILE_NAME="CompressedRoomV2%s.obj"% count
-			count=count+1
-			if(len(c)>50):
-				print OUTPUT_FILE_NAME
-				output=str(locs)+"\n"
-				outputFile.write(output)
+		# for c,locs in cc2:
+		# 	OUTPUT_FILE_NAME="CompressedRoomV2%s.obj"% count
+		# 	count=count+1
+		# 	if(len(c)>50):
+		# 		print OUTPUT_FILE_NAME
+		# 		output=str(locs)+"\n"
+		# 		outputFile.write(output)
 			
+		count = 0
+
+		# Removing noise
+		for c, locs in cc2: 
+			if len(c) <= 50:
+				del cc2[c]
+
+
+		self.connected_components = cc2
+
+		"""Prints connected components into individual object files"""
+		self.write_connected_components_objFile()
+
+	"""
+		Used to print the connected components into individual object files
+	"""
+	def write_connected_components_objFile(self):
+		
+		OUTPUT_FILE_COMPLETE = "CompressedRoom_Final.obj"
+		outputFile_complete = open(OUTPUT_FILE_COMPLETE, 'w')
+
+		total_v = []
+		for c, locs in cc2: 
+			count = count +1
+			OUTPUT_FILE_NAME2="ConnectedComponent_%s.obj"% count
+			outputFileTemp = open(OUTPUT_FILE_NAME2, 'w')
+			v = []
+			for eachFace in locs: 
+				v.extend([((eachFace*3)-3), ((eachFace*3)-2), eachFace*3-1 ])
+
+			total_v.extend(v)
+
+			for eachV in v: 
+				outputFileTemp.write(self.v_list[eachV])
+
+			for eachV in v: 
+				outputFileTemp.write(self.vn_list[eachV])
+
+			for x in range(1,len(v),3):
+				str_f = "f %d//%d %d//%d %d//%d \n" % (x, x, x+1, x+1, x+2, x+2)
+				outputFileTemp.write(str_f)
+
+		for eachV in total_v:
+			outputFile_complete.write(self.v_list[eachV])
+
+		for eachV in total_v:
+			outputFile_complete.write(self.vn_list[eachV])
+
+		for x in range(1,len(total_v),3):
+			str_f = "f %d//%d %d//%d %d//%d \n" % (x, x, x+1, x+1, x+2, x+2)
+			outputFile_complete.write(str_f)
+
 
 
 	def list_duplicates(self,seq):
@@ -179,12 +215,18 @@ class Parser(object):
 	def generate_v_with_face_indexes(self):
 		# sorted_v_unique = sorted(self.v_list_unique.items(), key=operator.itemgetter(1))
 		v_with_indexes = {}
+		
+
+""" Doesn't seem to be used
 		v_new_list=[]
 		for key in self.v_list:
 			key_rounded = ([round(float(x),self.rounding_number) for x in key.split()[1:]])
 			k = "v %f %f %f" % (key_rounded[0],key_rounded[1],key_rounded[2])
 			v_new_list.append(k)
+	
 		self.write_f_file(v_new_list)
+"""
+
 		for (key, indexes) in self.v_list_unique.items():
 			key_rounded = tuple([round(float(x),self.rounding_number) for x in key.split()[1:]])
 			indexes_faces = [x/3 for x in indexes]
@@ -196,9 +238,12 @@ class Parser(object):
 		for (key, indexes) in v_with_indexes.items():
 			v_with_indexes[key] = self.remove_list_duplicates(v_with_indexes[key])
 
-		v_with_faces_sorted = sorted(v_with_indexes.items(), key=operator.itemgetter(1))
-		self.write_a_file_temp(v_with_faces_sorted)
-
+		
+		
+""" Was used for debug... delete?
+		# v_with_faces_sorted = sorted(v_with_indexes.items(), key=operator.itemgetter(1))
+		# self.write_a_file_temp(v_with_faces_sorted)
+"""
 		self.v_list_unique = v_with_indexes
 
 
