@@ -20,7 +20,7 @@ class Parser(object):
 		
 		self.file_name = file_name
 		self.rounding_number = 1
-		self.yFactor = 0.4
+		self.yFactor = 0.55
 		"""
 		v1.0.1
 		Reading file just once. All vertices are read into a queue. On the basis of a trio of normals (per face), 
@@ -131,24 +131,7 @@ class Parser(object):
 			
 		print "Done CC "
 		outputFile = open("Temp_ConnectedComponents2", 'w')
-		print len((cc2))
-		count=0
-		# for c,locs in cc2:
-		# 	OUTPUT_FILE_NAME="CompressedRoomV2%s.obj"% count
-		# 	count=count+1
-		# 	if(len(c)>50):
-		# 		print OUTPUT_FILE_NAME
-		# 		output=str(locs)+"\n"
-		# 		outputFile.write(output)
-			
-		count = 0
-
-		# Removing noise
-		for c, locs in cc2: 
-			if len(c) <= 50:
-				del cc2[c]
-
-
+		
 		self.connected_components = cc2
 
 		"""Prints connected components into individual object files"""
@@ -163,25 +146,37 @@ class Parser(object):
 		outputFile_complete = open(OUTPUT_FILE_COMPLETE, 'w')
 
 		total_v = []
-		for c, locs in cc2: 
-			count = count +1
-			OUTPUT_FILE_NAME2="ConnectedComponent_%s.obj"% count
-			outputFileTemp = open(OUTPUT_FILE_NAME2, 'w')
-			v = []
-			for eachFace in locs: 
-				v.extend([((eachFace*3)-3), ((eachFace*3)-2), eachFace*3-1 ])
+		count = 0
 
-			total_v.extend(v)
+		print "Till here.... cc = ", len(self.connected_components)
 
-			for eachV in v: 
-				outputFileTemp.write(self.v_list[eachV])
+		for index, (c, locs) in enumerate(self.connected_components): 
+			if len(c) > 15:
+				count = count + 1
+				OUTPUT_FILE_NAME2="ConnectedComponent_%s.obj"% count
+				outputFileTemp = open(OUTPUT_FILE_NAME2, 'w')
+				v = []
 
-			for eachV in v: 
-				outputFileTemp.write(self.vn_list[eachV])
+				for eachFace in locs: 
+					v.extend([((eachFace*3)-3), ((eachFace*3)-2), eachFace*3-1 ])
 
-			for x in range(1,len(v),3):
-				str_f = "f %d//%d %d//%d %d//%d \n" % (x, x, x+1, x+1, x+2, x+2)
-				outputFileTemp.write(str_f)
+				total_v.extend(v)
+
+				for eachV in v: 
+					outputFileTemp.write(self.v_list[eachV])
+
+				for eachV in v: 
+					outputFileTemp.write(self.vn_list[eachV])
+
+				for x in range(1,len(v),3):
+					str_f = "f %d//%d %d//%d %d//%d \n" % (x, x, x+1, x+1, x+2, x+2)
+					outputFileTemp.write(str_f)
+			
+			else:
+				del self.connected_components[index]
+
+		print "Now.... cc = ", len(self.connected_components), count
+
 
 		for eachV in total_v:
 			outputFile_complete.write(self.v_list[eachV])
@@ -217,15 +212,15 @@ class Parser(object):
 		v_with_indexes = {}
 		
 
-""" Doesn't seem to be used
-		v_new_list=[]
-		for key in self.v_list:
-			key_rounded = ([round(float(x),self.rounding_number) for x in key.split()[1:]])
-			k = "v %f %f %f" % (key_rounded[0],key_rounded[1],key_rounded[2])
-			v_new_list.append(k)
-	
-		self.write_f_file(v_new_list)
-"""
+		""" Doesn't seem to be used
+				v_new_list=[]
+				for key in self.v_list:
+					key_rounded = ([round(float(x),self.rounding_number) for x in key.split()[1:]])
+					k = "v %f %f %f" % (key_rounded[0],key_rounded[1],key_rounded[2])
+					v_new_list.append(k)
+			
+				self.write_f_file(v_new_list)
+		"""
 
 		for (key, indexes) in self.v_list_unique.items():
 			key_rounded = tuple([round(float(x),self.rounding_number) for x in key.split()[1:]])
@@ -240,10 +235,10 @@ class Parser(object):
 
 		
 		
-""" Was used for debug... delete?
-		# v_with_faces_sorted = sorted(v_with_indexes.items(), key=operator.itemgetter(1))
-		# self.write_a_file_temp(v_with_faces_sorted)
-"""
+		""" Was used for debug... delete?
+				# v_with_faces_sorted = sorted(v_with_indexes.items(), key=operator.itemgetter(1))
+				# self.write_a_file_temp(v_with_faces_sorted)
+		"""
 		self.v_list_unique = v_with_indexes
 
 
