@@ -105,12 +105,14 @@ class ConvexHulls:
 			plt.plot(points[hull.vertices[0],0], points[hull.vertices[0],1], 'ro')
 			plt.show()
 
+			break
+
 
 
 	def makeDelaunayTriangulation(self):
 
 		for eachCC in self.vertices:
-			vertices = eachCC[0]
+			vertices = eachCC
 			# hull = ConvexHull(vertices)
 			# indices = hull.simplices
 			# v = vertices[indices]
@@ -135,8 +137,8 @@ class ConvexHulls:
 			# print ']);'
 
 			fig = plt.figure()
-			ax = fig.add_subplot(1, 1, 1, projection='2d')
-			ax.plot_trisurf(x, z, triangles=tri.simplices, cmap=plt.cm.Spectral)
+			ax = fig.add_subplot(1, 1, 1, projection='3d')
+			ax.plot_trisurf(x, y, z, triangles=tri.simplices, cmap=plt.cm.Spectral)
 			plt.show()
 
 
