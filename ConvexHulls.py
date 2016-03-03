@@ -53,7 +53,8 @@ class ConvexHulls:
 			"""
 
 			if line[:1] == "-":
-				print "For Surface ID: ", int(line.split()[1])
+				# print "For Surface ID: ", int(line.split()[1])
+				pass
 				
 			else:
 				temp = re.split(",|\(|\)|\[|\]", line)				
@@ -83,7 +84,10 @@ class ConvexHulls:
 
 	def makeConvexHull(self):
 
-		for eachCC in self.vertices:
+		outputBoundaries = open("Output_ConvexBoundaries.txt", "w")
+
+		for index, eachCC in enumerate(self.vertices):
+
 			vertices = eachCC
 
 			x = np.array([i[0] for i in vertices])
@@ -97,15 +101,24 @@ class ConvexHulls:
 			points = np.array([x,z]).T
 
 			hull = ConvexHull(points)
-			plt.plot(points[:,0], points[:,1], 'o')
+			outStr_head = "----------------- For Surface: #%d" % (index)
+			outputBoundaries.write(outStr_head)
+			outputBoundaries.write("\n")
+			outputBoundaries.write(str([(round(x[i],1), round(y[i],1), round(z[i],1)) for i in hull.vertices]))
+			outputBoundaries.write("\n")
 
-			for simplex in hull.simplices:
-				plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
-			plt.plot(points[hull.vertices,0], points[hull.vertices,1], 'r--', lw=2)
-			plt.plot(points[hull.vertices[0],0], points[hull.vertices[0],1], 'ro')
-			plt.show()
+			
+			"""
+				To show plot on matplotlib uncomment the next few lines
+			"""
+			# plt.plot(points[:,0], points[:,1], 'o')
+			# for simplex in hull.simplices:
+			# 	plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
+			# plt.plot(points[hull.vertices,0], points[hull.vertices,1], 'r--', lw=2)
+			# plt.plot(points[hull.vertices[0],0], points[hull.vertices[0],1], 'ro')
+			# plt.show()
 
-			break
+			# break
 
 
 
