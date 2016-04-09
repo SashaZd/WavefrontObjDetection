@@ -20,7 +20,7 @@ class Parser(object):
 		
 		self.file_name = file_name
 		self.rounding_number = 1
-		self.yFactor = 0.55
+		self.yFactor = 0.45
 		"""
 		v1.0.1
 		Reading file just once. All vertices are read into a queue. On the basis of a trio of normals (per face), 
@@ -39,17 +39,20 @@ class Parser(object):
 		self.connected_components = []
 		# self.visited_faces = {}
 
+		print "Created parser object for file: ", self.file_name
+
 
 	def readFile(self):
 		objFile = open(self.file_name, 'r')
 
 		line = objFile.readline()
 		
-		while(line[0:2] != "vn"):
+		while(line[0:2] != "vn" and line[0:1] != "n"):
 			if line[0:1] == "#":
 				pass
 			else:
 				self.parse_v(line)
+
 			line = objFile.readline()
 
 		print "Starting with %d vertices & normals" % (len(self.v_queue))
@@ -119,7 +122,7 @@ class Parser(object):
 			add_to_cc=True
 			for j,t in enumerate(cc2):
 				testSet=(t[1])
-				if(testSet.intersection(v1)):
+				if (testSet.intersection(v1)):
 					cc2[j][0].append(v[0])
 					cc2[j][1]=testSet.union(v1)
 					add_to_cc=False

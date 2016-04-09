@@ -23,6 +23,7 @@ class ConvexHulls:
 		"""
 		"""
 		self.connected_components = connected_components
+
 		self.vertices = []
 
 		self.getVertices()
@@ -39,36 +40,49 @@ class ConvexHulls:
 			
 
 	def getVertices(self):
-		cc_file = open("TempCCVertices.txt", "r")
+		if self.connected_components:
+			cc_file = self.connected_components
 
-		for line in cc_file:
-			vertices = []
-			temp_v = []
+			print "Num of connected_components inputted: #", len(self.connected_components)
+			for index, (c, locs) in enumerate(self.connected_components): 
+				vertices = []
+				if len(c) > 15: 
+					for eachTupVertices in c:
+						vertices.append(list(eachTupVertices))
+							
+					self.vertices.append(vertices)
+
+		else:
+			cc_file = open("TempCCVertices.txt", "r")
+
+			for line in cc_file:
+				vertices = []
+				temp_v = []
 
 
-			"""
-				This part is to save the 105 seconds of reading the file and creating CC. 
-				Reading the CC from the temporary file into the rest of the algorithm
-				TODO: Integration
-			"""
+				"""
+					This part is to save the 105 seconds of reading the file and creating CC. 
+					Reading the CC from the temporary file into the rest of the algorithm
+					TODO: Integration
+				"""
 
-			if line[:1] == "-":
-				# print "For Surface ID: ", int(line.split()[1])
-				pass
-				
-			else:
-				temp = re.split(",|\(|\)|\[|\]", line)				
-				for each in temp:
-					try:
-						temp_v.append(float(each))
-					except:
-						pass
+				if line[:1] == "-":
+					# print "For Surface ID: ", int(line.split()[1])
+					pass
+					
+				else:
+					temp = re.split(",|\(|\)|\[|\]", line)				
+					for each in temp:
+						try:
+							temp_v.append(float(each))
+						except:
+							pass
 
-				for x in xrange(0,len(temp_v)-1, 3):
-					vertex = [temp_v[x], temp_v[x+1], temp_v[x+2]]
-					vertices.append(vertex)
+					for x in xrange(0,len(temp_v)-1, 3):
+						vertex = [temp_v[x], temp_v[x+1], temp_v[x+2]]
+						vertices.append(vertex)
 
-				self.vertices.append(vertices)
+					self.vertices.append(vertices)
 
 
 	def writeConnectedComponentsTempFile(self):
