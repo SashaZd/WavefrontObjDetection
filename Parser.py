@@ -10,17 +10,24 @@ OUTPUT_FILE_NAME = "CompressedRoomV1.obj"
 
 class Parser(object):
 	"""
-		v1.0
+		v1.1
 		This defines a generalized parse dispatcher; 
 		All parse functions reside in subclasses.
 	"""
 
 
-	def __init__(self, file_name):
+	def __init__(self, file_name,output_file,direction='y'):
 		
 		self.file_name = file_name
+		self.output_file=output_file
 		self.rounding_number = 1
-		self.yFactor = 0.45
+		self.factor = 0.45
+		if direction=='x':
+			self.direction=0
+		elif direction=='y':
+			self.direction=1
+		else:
+			self.direction=2
 		"""
 		v1.0.1
 		Reading file just once. All vertices are read into a queue. On the basis of a trio of normals (per face), 
@@ -69,7 +76,7 @@ class Parser(object):
 				square=xyz[0]*xyz[0] + xyz[1]* xyz[1]+ xyz[2]*xyz[2]
 				# checking if Y-Normal is positive only. Need to add a min/max bound to this. 
 				# if (self.angle_with_y(xyz) <= 0.174533*2):
-				if -self.yFactor < (xyz[1]) / square <self.yFactor:
+				if -self.factor < (xyz[self.direction]) / square <self.factor:
 					flagVnSet = False
 			
 			if flagVnSet == True:
@@ -97,8 +104,6 @@ class Parser(object):
 
 
 		# Temporary writing for connected components. Remove later.
-		#self.write_a_file_temp(self.v_list_unique)
-
 		self.generate_v_with_face_indexes()
 
 		
@@ -133,7 +138,7 @@ class Parser(object):
 
 			
 		print "Done CC "
-		outputFile = open("Temp_ConnectedComponents2", 'w')
+		outputFile = open(self.output_file, 'w')
 		
 		self.connected_components = cc2
 
@@ -145,7 +150,7 @@ class Parser(object):
 	"""
 	def write_connected_components_objFile(self):
 		
-		OUTPUT_FILE_COMPLETE = "CompressedRoom_Final.obj"
+		OUTPUT_FILE_COMPLETE = self.output_file+'.obj'
 		outputFile_complete = open(OUTPUT_FILE_COMPLETE, 'w')
 
 		total_v = []
@@ -236,12 +241,6 @@ class Parser(object):
 		for (key, indexes) in v_with_indexes.items():
 			v_with_indexes[key] = self.remove_list_duplicates(v_with_indexes[key])
 
-		
-		
-		""" Was used for debug... delete?
-				# v_with_faces_sorted = sorted(v_with_indexes.items(), key=operator.itemgetter(1))
-				# self.write_a_file_temp(v_with_faces_sorted)
-		"""
 		self.v_list_unique = v_with_indexes
 
 
@@ -271,19 +270,6 @@ class Parser(object):
 		self.v_queue.append(line)
 
 
-	def parse_vn(self, line):
-		pass
-		# xyz = tuple(map(float, line.split()[1:]))
-
-		# #Only keep faces where qthe y-vector normals < 20 radians
-		# #0.174533
-
-		# # if (self.angle_with_y(xyz) <= 0.174533*2):
-		# if xyz[1] > 0:
-		# 	self.vn_queue.append(xyz)
-		# else:
-		# 	pass		
-
 	def parse_f(self, line):
 		pass
 
@@ -293,42 +279,6 @@ class Parser(object):
 		for e in seq:
 			keys[e] = 1
 		return keys.keys()
-
-	def write_a_file_temp(self, iterEle, file_name="Temp_FV_CC.txt"):
-		# To see what the iterable looks like
-		# Don't pass the iterable to this method to save time since this is for debug purposes only. 
-		# Instead, just paste this into the calling method and delete later.
-
-		outputFile = open(file_name, 'w')
-		# outputFile.write(comment)
-
-		# if isinstance(iterEle, dict):
-		for (key, indexes) in iterEle:
-			out_str = "%s :::: %s" % (key, indexes)
-			outputFile.write(out_str)
-			outputFile.write("\n")
-
-		# elif isinstance(iterEle, list):
-		# 	for element in iterEle:
-		# 		# out_str = str(element)
-		# 		outputFile.write(element)
-		# 		outputFile.write("\n")
-
-		# else:
-		# 	pass
-
-
-		
-
-
-# Unused, check with Carl
-	def angle_with_y(self,v1):
-		"""Dot product, then normalize, then offset from origin"""
-		v2=[0,1,0]
-		
-		cosang = np.dot(v1, v2)
-		sinang = np.linalg.norm(np.cross(v1, v2))
-		return np.arctan2(sinang, cosang)
 
 
 
